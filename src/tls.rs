@@ -43,7 +43,10 @@ impl<'a> From<&'a Psk<'a>> for TlsPsk {
         let mut cstrs = RawCstrs::new();
         let psk = Box::new(psk_hint_key_t {
             key: conf.key.as_ptr(),
+            #[cfg(esp_idf_version_major = "4")]
             key_size: conf.key.len() as u32,
+            #[cfg(not(esp_idf_version_major = "4"))]
+            key_size: conf.key.len(),
             hint: cstrs.as_ptr(conf.hint),
         });
 
