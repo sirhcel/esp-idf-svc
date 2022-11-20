@@ -203,7 +203,6 @@ impl<'a> From<&'a MqttClientConfiguration<'a>>
             }
         }
 
-        // FIXME: Support this for IDF 5 too.
         let tls_psk_conf = conf.psk.as_ref().map(|psk| psk.into());
 
         (c_conf, cstrs, tls_psk_conf)
@@ -306,7 +305,9 @@ impl<'a> From<&'a MqttClientConfiguration<'a>> for (esp_mqtt_client_config_t, Ra
             }
         }
 
-        (c_conf, cstrs)
+        let tls_psk_conf = conf.psk.as_ref().map(|psk| psk.into());
+
+        (c_conf, cstrs, tls_psk_conf)
     }
 }
 
@@ -456,9 +457,13 @@ impl<S> EspMqttClient<S> {
             c_conf.broker.address.uri = cstrs.as_ptr(url);
         }
 
-        // FIXME: Support this for IDF 5 too.
+        #[cfg(esp_idf_version_major = "4")]
         if let Some(ref conf) = tls_psk_conf {
             c_conf.psk_hint_key = &*conf.psk;
+        }
+        #[cfg(not(esp_idf_version_major = "4"))]
+        if let Some(ref conf) = tls_psk_conf {
+            c_conf.verification.psk_hint_key = &*conf.psk;
         }
 
         let raw_client = unsafe { esp_mqtt_client_init(&c_conf as *const _) };
