@@ -17,6 +17,8 @@ use crate::private::common::Newtype;
 use crate::private::cstr::RawCstrs;
 use crate::private::mutex::{Condvar, Mutex};
 
+use derivative::Derivative;
+
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]
 pub enum EspWebSocketTransport {
     TransportUnknown,
@@ -164,9 +166,11 @@ impl<'a> WebSocketEventType<'a> {
     }
 }
 
-#[derive(Default)]
+#[derive(Derivative)]
+#[derivative(Debug)]
 pub struct EspWebSocketClientConfig<'a> {
     pub username: Option<&'a str>,
+    #[derivative(Debug = "ignore")]
     pub password: Option<&'a str>,
     pub disable_auto_reconnect: bool,
     // TODO: pub user_context:
@@ -189,8 +193,10 @@ pub struct EspWebSocketClientConfig<'a> {
     pub ping_interval_sec: time::Duration,
     #[cfg(esp_idf_version = "4.4")]
     pub if_name: Option<&'a str>,
+    // TODO: Shouldn't this be X509 too?
     pub cert_pem: Option<&'a str>,
     pub client_cert: Option<&'a str>,
+    #[derivative(Debug = "ignore")]
     pub client_key: Option<&'a str>,
 }
 

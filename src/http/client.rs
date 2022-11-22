@@ -22,6 +22,8 @@ use crate::private::common::Newtype;
 use crate::private::cstr::*;
 use crate::tls::X509;
 
+use derivative::Derivative;
+
 impl From<Method> for Newtype<(esp_http_client_method_t, ())> {
     fn from(method: Method) -> Self {
         Self((
@@ -64,13 +66,15 @@ impl Default for FollowRedirectsPolicy {
     }
 }
 
-#[derive(Copy, Clone, Debug, Default)]
+#[derive(Copy, Clone, Derivative, Default)]
+#[derivative(Debug)]
 pub struct Configuration {
     pub buffer_size: Option<usize>,
     pub buffer_size_tx: Option<usize>,
     pub timeout: Option<core::time::Duration>,
     pub follow_redirects_policy: FollowRedirectsPolicy,
     pub client_certificate: Option<X509<'static>>,
+    #[derivative(Debug = "ignore")]
     pub private_key: Option<X509<'static>>,
 
     pub use_global_ca_store: bool,

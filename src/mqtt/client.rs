@@ -24,6 +24,8 @@ use crate::tls::X509;
 
 pub use client::{Details, MessageId};
 
+use derivative::Derivative;
+
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum MqttProtocolVersion {
     V3_1,
@@ -47,7 +49,8 @@ pub struct LwtConfiguration<'a> {
     pub retain: bool,
 }
 
-#[derive(Debug)]
+#[derive(Derivative)]
+#[derivative(Debug)]
 pub struct MqttClientConfiguration<'a> {
     pub protocol_version: Option<MqttProtocolVersion>,
 
@@ -68,6 +71,7 @@ pub struct MqttClientConfiguration<'a> {
     pub out_buffer_size: usize,
 
     pub username: Option<&'a str>,
+    #[derivative(Debug = "ignore")]
     pub password: Option<&'a str>,
 
     pub use_global_ca_store: bool,
@@ -78,7 +82,9 @@ pub struct MqttClientConfiguration<'a> {
     pub server_certificate: Option<X509<'static>>,
 
     pub client_certificate: Option<X509<'static>>,
+    #[derivative(Debug = "ignore")]
     pub private_key: Option<X509<'static>>,
+    #[derivative(Debug = "ignore")]
     pub private_key_password: Option<&'a str>,
     // TODO: Future
     // pub psk_hint_key: KeyHint,

@@ -35,6 +35,7 @@ esp-idf-sys = { version = "0.31.11", default-features = false, features = ["nati
 esp-idf-hal = { version = "0.39", default-features = false, features = ["esp-idf-sys"] }
 embassy-sync = { version = "0.1", optional = true }
 embassy-time = { version = "0.1", optional = true, features = ["tick-hz-1_000_000"] }
+derivative = "2.2.0"
 
 [build-dependencies]
 embuild = "0.30.4"
