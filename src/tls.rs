@@ -1,8 +1,10 @@
 use core::ffi::{c_char, CStr};
 use core::fmt::Debug;
 
+#[cfg(feature = "alloc")]
 use esp_idf_sys::psk_hint_key_t;
 
+#[cfg(feature = "alloc")]
 use crate::private::cstr::RawCstrs;
 
 #[derive(Copy, Clone, Eq, PartialEq)]
@@ -24,11 +26,13 @@ impl<'a> Debug for Psk<'a> {
 /// It could be easily converted from the public `Psk` configuration and holds the `psk_hint_key_t`
 /// along with its (string) data as this data typically needs to be around after initializing a TLS
 /// client until it has been started.
+#[cfg(feature = "alloc")]
 pub(crate) struct TlsPsk {
-    pub(crate) psk: Box<psk_hint_key_t>,
+    pub(crate) psk: alloc::boxed::Box<psk_hint_key_t>,
     pub(crate) _cstrs: RawCstrs,
 }
 
+#[cfg(feature = "alloc")]
 impl Debug for TlsPsk {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
         f.debug_struct("TlsPsk")
@@ -37,10 +41,11 @@ impl Debug for TlsPsk {
     }
 }
 
+#[cfg(feature = "alloc")]
 impl<'a> From<&'a Psk<'a>> for TlsPsk {
     fn from(conf: &Psk) -> Self {
         let mut cstrs = RawCstrs::new();
-        let psk = Box::new(psk_hint_key_t {
+        let psk = alloc::boxed::Box::new(psk_hint_key_t {
             key: conf.key.as_ptr(),
             key_size: conf.key.len(),
             hint: cstrs.as_ptr(conf.hint),

@@ -19,7 +19,9 @@ use crate::private::mutex::RawCondvar;
 pub use asyncify::*;
 
 use crate::private::cstr::*;
-use crate::tls::{Psk, TlsPsk, X509};
+#[cfg(esp_idf_esp_tls_psk_verification)]
+use crate::tls::Psk;
+use crate::tls::{TlsPsk, X509};
 
 pub use client::{Details, MessageId};
 
@@ -80,6 +82,7 @@ pub struct MqttClientConfiguration<'a> {
     pub private_key: Option<X509<'static>>,
     pub private_key_password: Option<&'a str>,
 
+    #[cfg(esp_idf_esp_tls_psk_verification)]
     pub psk: Option<Psk<'a>>,
     // pub alpn_protos: &'a [&'a str],
     // pub use_secure_element: bool,
@@ -122,6 +125,7 @@ impl<'a> Default for MqttClientConfiguration<'a> {
             private_key: None,
             private_key_password: None,
 
+            #[cfg(esp_idf_esp_tls_psk_verification)]
             psk: None,
         }
     }
@@ -203,7 +207,11 @@ impl<'a> From<&'a MqttClientConfiguration<'a>>
             }
         }
 
+        // Always prepare the optional TLS PSK configuration for our return tuple.
+        #[cfg(esp_idf_esp_tls_psk_verification)]
         let tls_psk_conf = conf.psk.as_ref().map(|psk| psk.into());
+        #[cfg(not(esp_idf_esp_tls_psk_verification))]
+        let tls_psk_conf = None;
 
         (c_conf, cstrs, tls_psk_conf)
     }
@@ -457,10 +465,12 @@ impl<S> EspMqttClient<S> {
             c_conf.broker.address.uri = cstrs.as_ptr(url);
         }
 
+        #[cfg(esp_idf_esp_tls_psk_verification)]
         #[cfg(esp_idf_version_major = "4")]
         if let Some(ref conf) = tls_psk_conf {
             c_conf.psk_hint_key = &*conf.psk;
         }
+        #[cfg(esp_idf_esp_tls_psk_verification)]
         #[cfg(not(esp_idf_version_major = "4"))]
         if let Some(ref conf) = tls_psk_conf {
             c_conf.verification.psk_hint_key = &*conf.psk;
