@@ -20,7 +20,7 @@ use crate::private::mutex::RawCondvar;
 pub use asyncify::*;
 
 use crate::private::cstr::*;
-use crate::tls::{Psk, TlsPsk, X509};
+use crate::tls::*;
 
 pub use client::{Details, MessageId};
 
@@ -81,6 +81,7 @@ pub struct MqttClientConfiguration<'a> {
     pub private_key: Option<X509<'static>>,
     pub private_key_password: Option<&'a str>,
 
+    #[cfg(all(esp_idf_esp_tls_psk_verification, feature = "alloc"))]
     pub psk: Option<Psk<'a>>,
     // pub alpn_protos: &'a [&'a str],
     // pub use_secure_element: bool,
@@ -123,6 +124,7 @@ impl<'a> Default for MqttClientConfiguration<'a> {
             private_key: None,
             private_key_password: None,
 
+            #[cfg(all(esp_idf_esp_tls_psk_verification, feature = "alloc"))]
             psk: None,
         }
     }
@@ -204,7 +206,10 @@ impl<'a> From<&'a MqttClientConfiguration<'a>>
             }
         }
 
+        #[cfg(all(esp_idf_esp_tls_psk_verification, feature = "alloc"))]
         let tls_psk_conf = conf.psk.as_ref().map(|psk| psk.into());
+        #[cfg(not(all(esp_idf_esp_tls_psk_verification, feature = "alloc")))]
+        let tls_psk_conf = None;
 
         (c_conf, cstrs, tls_psk_conf)
     }
@@ -308,7 +313,10 @@ impl<'a> From<&'a MqttClientConfiguration<'a>>
             }
         }
 
+        #[cfg(all(esp_idf_esp_tls_psk_verification, feature = "alloc"))]
         let tls_psk_conf = conf.psk.as_ref().map(|psk| psk.into());
+        #[cfg(not(all(esp_idf_esp_tls_psk_verification, feature = "alloc")))]
+        let tls_psk_conf = None;
 
         (c_conf, cstrs, tls_psk_conf)
     }
@@ -460,13 +468,16 @@ impl<S> EspMqttClient<S> {
             c_conf.broker.address.uri = cstrs.as_ptr(url);
         }
 
-        #[cfg(esp_idf_version_major = "4")]
-        if let Some(ref conf) = tls_psk_conf {
-            c_conf.psk_hint_key = &*conf.psk;
-        }
-        #[cfg(not(esp_idf_version_major = "4"))]
-        if let Some(ref conf) = tls_psk_conf {
-            c_conf.broker.verification.psk_hint_key = &*conf.psk;
+        #[cfg(all(esp_idf_esp_tls_psk_verification, feature = "alloc"))]
+        {
+            #[cfg(esp_idf_version_major = "4")]
+            if let Some(ref conf) = tls_psk_conf {
+                c_conf.psk_hint_key = &*conf.psk;
+            }
+            #[cfg(not(esp_idf_version_major = "4"))]
+            if let Some(ref conf) = tls_psk_conf {
+                c_conf.broker.verification.psk_hint_key = &*conf.psk;
+            }
         }
 
         let raw_client = unsafe { esp_mqtt_client_init(&c_conf as *const _) };
